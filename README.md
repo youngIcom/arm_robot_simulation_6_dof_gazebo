@@ -1,8 +1,12 @@
-# arm_description — Simulasi Service Robot Manipulator 6-DOF (RoboCup@Home)
+# arm_description — Simulasi Service Robot Manipulator 6-DOF
 
-Proyek ini menyediakan model URDF/Xacro, konfigurasi simulasi fisika **Gazebo Sim (Harmonic)**, dan visualisasi **RViz2** untuk robot manipulator layanan domestik 6-DOF berkategori **RoboCup@Home**, dikembangkan pada lingkungan **ROS 2 Jazzy**.
+Proyek ini menyediakan model URDF/Xacro, konfigurasi simulasi fisika **Gazebo Sim (Harmonic)**, dan visualisasi **RViz2** untuk robot manipulator layanan domestik 6-DOF, dikembangkan pada lingkungan **ROS 2 Jazzy**.
 
 ---
+
+| Tampilan Rviz2 | Tampilan Gazebo Sim |
+| :--: | :--: |
+| ![RViz](assets/rviz_sim.png) | ![Gazebo](assets/gazebo_sim.png) |
 
 ## Fitur Utama
 
@@ -52,7 +56,7 @@ arm_sim_ws/
 - **ROS Version:** ROS 2 Jazzy Jalisco
 - **Simulator:** Gazebo Sim Harmonic (`ros_gz_sim`)
 
-Instal dependensi jika belum tersedia di sistem:
+Instal dependensi jika belum tersedia di sistem, jika sudah di install tidak usah lagi dijalankan:
 ```bash
 sudo apt update
 sudo apt install -y \
@@ -121,9 +125,3 @@ ros2 launch arm_description sim_control.launch.py
 | `gripper_right_finger_joint`| Prismatic | -Y| $0.0$ s/d $0.04$ m | Capit kanan |
 
 ---
-
-## Langkah Pengembangan Selanjutnya
-
-1. **Konfigurasi MoveIt 2:** Menjalankan MoveIt Setup Assistant untuk menghasilkan konfigurasi perencanaan gerak (*motion planning*) dan matriks penghindaran tabrakan (*self-collision matrix*).
-2. **Uji Manipulasi Objek:** Menambahkan objek interaktif (kaleng, botol, buah) ke dalam dunia Gazebo untuk menguji kemampuan genggaman (*grasping*) gripper 2 jari.
-3. **Integrasi Mobile Base (Nav2):** Mengubah `base_link` statis menjadi platform roda diferensial/omni (*differential / omnidirectional drive*) untuk simulasi navigasi otonom.
