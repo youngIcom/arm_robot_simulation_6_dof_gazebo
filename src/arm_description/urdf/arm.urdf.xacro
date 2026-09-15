@@ -1,0 +1,647 @@
+<?xml version="1.0"?>
+<robot name="service_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ============================================================
+       PARAMETER DESAIN BODY & ARM ROBOCUP@HOME
+       Tinggi bahu: ~0.75 m dari lantai (sesuai meja & rak domestik)
+       Tinggi total robot: ~1.05 m
+       ============================================================ -->
+
+  <!-- Dimensi Base (Mobile Chassis Statis) -->
+  <xacro:property name="chassis_radius"    value="0.22"/>  <!-- Diameter 44 cm -->
+  <xacro:property name="chassis_height"    value="0.18"/>
+
+  <!-- Dimensi Torso (Badan Statis) -->
+  <xacro:property name="torso_width"       value="0.22"/>
+  <xacro:property name="torso_depth"       value="0.20"/>
+  <xacro:property name="torso_height"      value="0.55"/>
+
+  <!-- Dimensi Kepala / Sensor Mast -->
+  <xacro:property name="neck_height"       value="0.06"/>
+  <xacro:property name="head_depth"        value="0.12"/>
+  <xacro:property name="head_width"        value="0.16"/>
+  <xacro:property name="head_height"       value="0.12"/>
+
+  <!-- Dimensi Lengan (6-DOF) -->
+  <xacro:property name="arm_mount_len"     value="0.09"/>  <!-- Tungkai maju bahu (14 cm, bebas dari tabung base) -->
+  <xacro:property name="shoulder_len"      value="0.10"/>
+  <xacro:property name="upper_arm_len"     value="0.30"/>
+  <xacro:property name="forearm_len"       value="0.26"/>
+  <xacro:property name="wrist_len"         value="0.09"/>
+  <xacro:property name="gripper_base_len"  value="0.06"/>
+  <xacro:property name="finger_len"        value="0.07"/>
+  <xacro:property name="finger_width"      value="0.015"/>
+  <xacro:property name="finger_stroke"     value="0.04"/>
+
+  <!-- MATERIAL & WARNA KHAS SERVICE ROBOT -->
+  <material name="robot_white">
+    <color rgba="0.93 0.93 0.95 1.0"/>
+  </material>
+  <material name="dark_grey">
+    <color rgba="0.20 0.21 0.23 1.0"/>
+  </material>
+  <material name="accent_orange">
+    <color rgba="0.95 0.45 0.1 1.0"/>
+  </material>
+  <material name="head_visor">
+    <color rgba="0.1 0.12 0.15 1.0"/>
+  </material>
+  <material name="gripper_finger_color">
+    <color rgba="0.15 0.15 0.15 1.0"/>
+  </material>
+  <material name="camera_blue">
+    <color rgba="0.1 0.3 0.7 1.0"/>
+  </material>
+
+  <!-- ============================================================
+       STRUKTUR BODY STATIS (KOKOH DENGAN HUKUM FISIKA NYATA)
+       ============================================================ -->
+
+  <link name="world"/>
+
+  <joint name="world_fixed" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- BASE CHASSIS (Lantai Z=0) -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${chassis_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${chassis_height}" radius="${chassis_radius}"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+    <visual>
+      <origin xyz="0 0 ${chassis_height * 0.4}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.02" radius="${chassis_radius + 0.003}"/>
+      </geometry>
+      <material name="accent_orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${chassis_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${chassis_height}" radius="${chassis_radius}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="20.0"/>
+      <origin xyz="0 0 ${chassis_height/2}"/>
+      <inertia ixx="0.30" ixy="0" ixz="0" iyy="0.30" iyz="0" izz="0.45"/>
+    </inertial>
+  </link>
+
+  <!-- TORSO / BADAN UTAMA -->
+  <joint name="base_to_torso" type="fixed">
+    <parent link="base_link"/>
+    <child link="torso_link"/>
+    <origin xyz="0 0 ${chassis_height}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="torso_link">
+    <visual>
+      <origin xyz="0 0 ${torso_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${torso_depth} ${torso_width} ${torso_height}"/>
+      </geometry>
+      <material name="robot_white"/>
+    </visual>
+    <visual>
+      <origin xyz="${torso_depth/2 + 0.001} 0 ${torso_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.002 0.04 ${torso_height * 0.7}"/>
+      </geometry>
+      <material name="accent_orange"/>
+    </visual>
+    <visual>
+      <origin xyz="${torso_depth/2 + 0.001} 0 ${torso_height * 0.75}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.002 0.14 0.12"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${torso_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${torso_depth} ${torso_width} ${torso_height}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="15.0"/>
+      <origin xyz="0 0 ${torso_height/2}"/>
+      <inertia ixx="0.35" ixy="0" ixz="0" iyy="0.32" iyz="0" izz="0.15"/>
+    </inertial>
+  </link>
+
+  <!-- KEPALA / SENSOR MAST STATIS -->
+  <joint name="torso_to_neck" type="fixed">
+    <parent link="torso_link"/>
+    <child link="neck_link"/>
+    <origin xyz="0 0 ${torso_height}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="neck_link">
+    <visual>
+      <origin xyz="0 0 ${neck_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${neck_height}" radius="0.04"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${neck_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${neck_height}" radius="0.04"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <origin xyz="0 0 ${neck_height/2}"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="neck_to_head" type="fixed">
+    <parent link="neck_link"/>
+    <child link="head_link"/>
+    <origin xyz="0 0 ${neck_height}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="head_link">
+    <visual>
+      <origin xyz="0 0 ${head_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${head_depth} ${head_width} ${head_height}"/>
+      </geometry>
+      <material name="robot_white"/>
+    </visual>
+    <visual>
+      <origin xyz="${head_depth/2 + 0.001} 0 ${head_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.002 ${head_width * 0.8} ${head_height * 0.6}"/>
+      </geometry>
+      <material name="head_visor"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${head_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${head_depth} ${head_width} ${head_height}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.0"/>
+      <origin xyz="0 0 ${head_height/2}"/>
+      <inertia ixx="0.003" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.003"/>
+    </inertial>
+  </link>
+
+  <!-- ============================================================
+       ARM MOUNT & 6-DOF ARM DENGAN BATASAN SUDUT FISIK REALISTIS
+       ============================================================ -->
+
+  <joint name="torso_to_arm_mount" type="fixed">
+    <parent link="torso_link"/>
+    <child link="arm_mount_link"/>
+    <origin xyz="${torso_depth/2} 0 ${torso_height - 0.10}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="arm_mount_link">
+    <!-- Casing tungkai silinder maju -->
+    <visual>
+      <origin xyz="${arm_mount_len/2} 0 0" rpy="0 1.5708 0"/>
+      <geometry>
+        <cylinder length="${arm_mount_len}" radius="0.045"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+    <!-- Cincin aksen oranye di pangkal torso -->
+    <visual>
+      <origin xyz="0.005 0 0" rpy="0 1.5708 0"/>
+      <geometry>
+        <cylinder length="0.01" radius="0.052"/>
+      </geometry>
+      <material name="accent_orange"/>
+    </visual>
+    <collision>
+      <origin xyz="${arm_mount_len/2} 0 0" rpy="0 1.5708 0"/>
+      <geometry>
+        <cylinder length="${arm_mount_len}" radius="0.045"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.8"/>
+      <origin xyz="${arm_mount_len/2} 0 0"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <!-- JOINT 1: Shoulder Yaw (Diletakkan di ujung tungkai) -->
+  <joint name="joint1_shoulder_yaw" type="revolute">
+    <parent link="arm_mount_link"/>
+    <child link="link1_shoulder"/>
+    <origin xyz="${arm_mount_len} 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.1" upper="2.1" effort="40.0" velocity="2.0"/>
+  </joint>
+
+  <link name="link1_shoulder">
+    <visual>
+      <origin xyz="0 0 ${shoulder_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${shoulder_len}" radius="0.05"/>
+      </geometry>
+      <material name="robot_white"/>
+    </visual>
+    <visual>
+      <origin xyz="0 0 ${shoulder_len}" rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder length="0.10" radius="0.045"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${shoulder_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${shoulder_len}" radius="0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.5"/>
+      <origin xyz="0 0 ${shoulder_len/2}"/>
+      <inertia ixx="0.004" ixy="0" ixz="0" iyy="0.004" iyz="0" izz="0.003"/>
+    </inertial>
+  </link>
+
+  <!-- JOINT 2: Shoulder Pitch (Dibatasi lower -0.5 agar tidak menekuk menabrak badan/kepala) -->
+  <joint name="joint2_shoulder_pitch" type="revolute">
+    <parent link="link1_shoulder"/>
+    <child link="link2_upper_arm"/>
+    <origin xyz="0 0 ${shoulder_len}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.5" upper="1.8" effort="50.0" velocity="1.5"/>
+  </joint>
+
+  <link name="link2_upper_arm">
+    <visual>
+      <origin xyz="0 0 ${upper_arm_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.065 0.075 ${upper_arm_len - 0.04}"/>
+      </geometry>
+      <material name="robot_white"/>
+    </visual>
+    <visual>
+      <origin xyz="0.033 0 ${upper_arm_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.002 0.035 ${upper_arm_len * 0.7}"/>
+      </geometry>
+      <material name="accent_orange"/>
+    </visual>
+    <visual>
+      <origin xyz="0 0 ${upper_arm_len}" rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder length="0.085" radius="0.04"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${upper_arm_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.065 0.075 ${upper_arm_len}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2.0"/>
+      <origin xyz="0 0 ${upper_arm_len/2}"/>
+      <inertia ixx="0.015" ixy="0" ixz="0" iyy="0.015" iyz="0" izz="0.003"/>
+    </inertial>
+  </link>
+
+  <!-- JOINT 3: Elbow Pitch -->
+  <joint name="joint3_elbow_pitch" type="revolute">
+    <parent link="link2_upper_arm"/>
+    <child link="link3_forearm"/>
+    <origin xyz="0 0 ${upper_arm_len}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.2" upper="1.5" effort="30.0" velocity="2.0"/>
+  </joint>
+
+  <link name="link3_forearm">
+    <visual>
+      <origin xyz="0 0 ${forearm_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.055 0.06 ${forearm_len - 0.03}"/>
+      </geometry>
+      <material name="robot_white"/>
+    </visual>
+    <visual>
+      <origin xyz="0.028 0 ${forearm_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.002 0.025 ${forearm_len * 0.6}"/>
+      </geometry>
+      <material name="accent_orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${forearm_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.055 0.06 ${forearm_len}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.4"/>
+      <origin xyz="0 0 ${forearm_len/2}"/>
+      <inertia ixx="0.008" ixy="0" ixz="0" iyy="0.008" iyz="0" izz="0.002"/>
+    </inertial>
+  </link>
+
+  <!-- JOINT 4: Wrist Pitch -->
+  <joint name="joint4_wrist_pitch" type="revolute">
+    <parent link="link3_forearm"/>
+    <child link="link4_wrist_pitch"/>
+    <origin xyz="0 0 ${forearm_len}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.8" upper="1.8" effort="15.0" velocity="2.5"/>
+  </joint>
+
+  <link name="link4_wrist_pitch">
+    <!-- Silinder poros pitch horizontal -->
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder length="0.065" radius="0.032"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+    <!-- Casing leher penghubung dari sumbu pitch (Z=0) ke sumbu yaw (Z=0.045) -->
+    <visual>
+      <origin xyz="0 0 0.0225" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.045" radius="0.026"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+    <!-- Cincin flange/bantalan dudukan Joint 5 -->
+    <visual>
+      <origin xyz="0 0 0.043" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.005" radius="0.030"/>
+      </geometry>
+      <material name="accent_orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.02" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.045" radius="0.032"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <origin xyz="0 0 0.02"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <!-- JOINT 5: Wrist Yaw -->
+  <joint name="joint5_wrist_yaw" type="revolute">
+    <parent link="link4_wrist_pitch"/>
+    <child link="link5_wrist_yaw"/>
+    <origin xyz="0 0 0.045" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="3.0"/>
+  </joint>
+
+  <link name="link5_wrist_yaw">
+    <!-- Piringan dasar penghubung ke flange Joint 4 -->
+    <visual>
+      <origin xyz="0 0 0.003" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.006" radius="0.029"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+    <!-- Casing utama wrist yaw putih -->
+    <visual>
+      <origin xyz="0 0 ${wrist_len/4 + 0.003}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${wrist_len/2}" radius="0.027"/>
+      </geometry>
+      <material name="robot_white"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${wrist_len/4}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="${wrist_len/2}" radius="0.029"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.4"/>
+      <origin xyz="0 0 ${wrist_len/4}"/>
+      <inertia ixx="0.0005" ixy="0" ixz="0" iyy="0.0005" iyz="0" izz="0.0005"/>
+    </inertial>
+  </link>
+
+  <!-- JOINT 6: Wrist Roll -->
+  <joint name="joint6_wrist_roll" type="revolute">
+    <parent link="link5_wrist_yaw"/>
+    <child link="gripper_base_link"/>
+    <origin xyz="0 0 ${wrist_len/2}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="8.0" velocity="3.0"/>
+  </joint>
+
+  <!-- GRIPPER BASE / PALM -->
+  <link name="gripper_base_link">
+    <visual>
+      <origin xyz="0 0 ${gripper_base_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.065 0.09 ${gripper_base_len}"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${gripper_base_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.065 0.09 ${gripper_base_len}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.6"/>
+      <origin xyz="0 0 ${gripper_base_len/2}"/>
+      <inertia ixx="0.0008" ixy="0" ixz="0" iyy="0.0006" iyz="0" izz="0.0008"/>
+    </inertial>
+  </link>
+
+  <!-- EYE-IN-HAND CAMERA -->
+  <joint name="camera_joint" type="fixed">
+    <parent link="gripper_base_link"/>
+    <child link="camera_link"/>
+    <origin xyz="0.035 0 0.02" rpy="0 0 0"/>
+  </joint>
+
+  <link name="camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.02 0.06 0.022"/>
+      </geometry>
+      <material name="camera_blue"/>
+    </visual>
+  </link>
+
+  <!-- GRIPPER FINGER KIRI -->
+  <joint name="gripper_left_finger_joint" type="prismatic">
+    <parent link="gripper_base_link"/>
+    <child link="gripper_left_finger"/>
+    <origin xyz="0 0.028 ${gripper_base_len}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0.0" upper="${finger_stroke}" effort="20.0" velocity="0.1"/>
+  </joint>
+
+  <link name="gripper_left_finger">
+    <visual>
+      <origin xyz="0 0 ${finger_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.022 ${finger_width} ${finger_len}"/>
+      </geometry>
+      <material name="gripper_finger_color"/>
+    </visual>
+    <visual>
+      <origin xyz="0 -0.004 ${finger_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.018 0.003 ${finger_len * 0.8}"/>
+      </geometry>
+      <material name="accent_orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${finger_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.022 ${finger_width} ${finger_len}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <origin xyz="0 0 ${finger_len/2}"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <!-- GRIPPER FINGER KANAN -->
+  <joint name="gripper_right_finger_joint" type="prismatic">
+    <parent link="gripper_base_link"/>
+    <child link="gripper_right_finger"/>
+    <origin xyz="0 -0.028 ${gripper_base_len}" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="0.0" upper="${finger_stroke}" effort="20.0" velocity="0.1"/>
+  </joint>
+
+  <link name="gripper_right_finger">
+    <visual>
+      <origin xyz="0 0 ${finger_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.022 ${finger_width} ${finger_len}"/>
+      </geometry>
+      <material name="gripper_finger_color"/>
+    </visual>
+    <visual>
+      <origin xyz="0 0.004 ${finger_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.018 0.003 ${finger_len * 0.8}"/>
+      </geometry>
+      <material name="accent_orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${finger_len/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.022 ${finger_width} ${finger_len}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <origin xyz="0 0 ${finger_len/2}"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <!-- GRASP TCP -->
+  <joint name="grasp_tcp_joint" type="fixed">
+    <parent link="gripper_base_link"/>
+    <child link="grasp_tcp"/>
+    <origin xyz="0 0 ${gripper_base_len + finger_len - 0.01}" rpy="0 0 0"/>
+  </joint>
+  <link name="grasp_tcp"/>
+
+  <!-- ============================================================
+       ROS2 CONTROL & GAZEBO SIM HARMONIC PLUGIN
+       ============================================================ -->
+  <ros2_control name="GazeboSimSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    <joint name="joint1_shoulder_yaw">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="joint2_shoulder_pitch">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="joint3_elbow_pitch">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="joint4_wrist_pitch">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="joint5_wrist_yaw">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="joint6_wrist_roll">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="gripper_left_finger_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="gripper_right_finger_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+  <!-- Gazebo ROS 2 Control Plugin -->
+  <gazebo>
+    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <parameters>$(find arm_description)/config/arm_controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+
+</robot>
